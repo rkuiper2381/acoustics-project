@@ -1,11 +1,20 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io import wavfile
-
+from pydub import AudioSegment
+from os import path
 
 class Model:
     def __init__(self, file):
+        if file.endswith('.mp3'):  #Converts mp3 file to wav, requires ffmpeg
+            sound = AudioSegment.from_mp3(file)
+            dst = file.split('.')[0]
+            dst = dst + '.wav'
+            sound.export(dst, format='wav')
+            file = dst
+            print('mp3 file converted to wav file')
         self.sample_rate, self.data = wavfile.read(file)
+        self.data = self.data.flatten()  # Flatten the 2D array to 1D
         self.spectrum, self.freqs, self.bins, self.img = plt.specgram(self.data, Fs=self.sample_rate, NFFT=1024, cmap=plt.get_cmap("autumn_r"))
         self.times = np.linspace(0, self.get_duration(), num=self.data.shape[0])
 
