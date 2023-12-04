@@ -18,7 +18,7 @@ class Model:
 
         self.check_channels()
         self.data = self.data.flatten()  # Flatten the 2D array to 1D
-        self.spectrum, self.freqs, self.bins, self.img = plt.specgram(self.data, Fs=self.sample_rate, NFFT=1024, cmap=plt.get_cmap("autumn_r"))
+        self.spectrum, self.freqs, self.t, self.img = plt.specgram(self.data, Fs=self.sample_rate, NFFT=1024, cmap=plt.get_cmap("autumn_r"))
         self.times = np.linspace(0, self.get_duration(), num=self.data.shape[0])
         self.data_in_db = self.get_data_by_frequency()
         
