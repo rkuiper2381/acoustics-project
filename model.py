@@ -119,21 +119,29 @@ class Model:
 
     def plot_freqs(self):
         plt.figure(2)
-        plt.plot(self.t, self.data_in_db["Low"])
+
+        # Interpolate the data_in_db["Low"] to match the length of self.times
+        interpolated_power = np.interp(self.times, np.linspace(0, self.get_duration(), num=len(self.data_in_db["Low"])),
+                                       self.data_in_db["Low"])
+        plt.plot(self.times, interpolated_power)
         plt.title("Reverb Low Frequency")
         plt.xlabel("Time (s)")
         plt.ylabel("Power (dB)")
         plt.show()
-        
+
         plt.figure(3)
-        plt.plot(self.t, self.data_in_db["Mid"])
+        interpolated_power = np.interp(self.times, np.linspace(0, self.get_duration(), num=len(self.data_in_db["Mid"])),
+                                       self.data_in_db["Mid"])
+        plt.plot(self.times, interpolated_power)
         plt.title("Reverb Mid Frequency")
         plt.xlabel("Time (s)")
         plt.ylabel("Power (dB)")
         plt.show()
 
         plt.figure(4)
-        plt.plot(self.t, self.data_in_db["High"])
+        interpolated_power = np.interp(self.times, np.linspace(0, self.get_duration(), num=len(self.data_in_db["High"])),
+                                       self.data_in_db["High"])
+        plt.plot(self.times, interpolated_power)
         plt.title("Reverb High Frequency")
         plt.xlabel("Time (s)")
         plt.ylabel("Power (dB)")

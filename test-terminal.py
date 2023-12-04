@@ -8,6 +8,7 @@ test1 = Model(file1)
 print("Sample Rate: " + str(test1.sample_rate))
 print("Length: " + str(test1.get_duration()) + " seconds")
 test1.plot_waveform()
+test1.plot_freqs()
 
 print("Test 2: " + str(file2))
 test2 = Model(file2)
@@ -16,9 +17,11 @@ print("Length: " + str(test2.get_duration()) + " seconds")
 test2.plot_waveform()
 test2.plot_freqs()
 
+
 print("Test 3: " + str(file3))
 test3 = Model(file3)
 print("Sample Rate: " + str(test3.sample_rate))
 print("Length: " + str(test3.get_duration()) + " seconds")
 test3.plot_waveform()
 test3.plot_freqs()
+
