@@ -13,7 +13,9 @@ class Model:
             sound.export(dst, format='wav')
             file = dst
             print('mp3 file converted to wav file')
+        file = self.check_metadata(file)
         self.sample_rate, self.data = wavfile.read(file)
+        self.check_channels()
         self.data = self.data.flatten()  # Flatten the 2D array to 1D
         self.spectrum, self.freqs, self.bins, self.img = plt.specgram(self.data, Fs=self.sample_rate, NFFT=1024, cmap=plt.get_cmap("autumn_r"))
         self.times = np.linspace(0, self.get_duration(), num=self.data.shape[0])
@@ -81,3 +83,32 @@ class Model:
         plt.clf() #Remove/Overwrite Spectrogram from init
         plt.plot(self.times, self.data)
         plt.show()
+
+    #Below checks for metadata, and if it finds any then creates a new wav file without the metadata and returns it, otherwise returns the file unedited
+    def check_metadata(self, file):
+        sound = AudioSegment.from_file(file)
+
+        # Check if INFO metadata is present
+        if b'INFO' in sound.raw_data:
+            print("INFO metadata found:")
+            print(sound.raw_data[b'INFO'])
+            new_sound = AudioSegment(
+                sound.raw_data[:sound.raw_data.find(b'INFO')],
+                frame_rate=sound.frame_rate,
+                sample_width=sound.sample_width,
+                channels=sound.channels
+            )
+            new_file = file.split('.')[0]
+            new_file = 'nometa' + new_file + '.wav'
+            new_sound.export(new_file, format='wav')
+            print(f"Metadata removed. New file saved as {new_file}")
+            return new_file
+        else:
+            print("No INFO metadata found.")
+            return file
+
+    def check_channels(self):
+        # Check if multiple channels exist, and if so convert to one channel whose data is the average of the other channels combined
+        if len(self.data.shape) > 1 and self.data.shape[1] > 1:
+            print("Multiple channels found. Converting to single channel.")
+            self.data = np.mean(self.data, axis=1)
