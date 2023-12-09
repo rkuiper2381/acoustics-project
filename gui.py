@@ -34,6 +34,8 @@ class AudioAnalyzerGUI:
         file_path = filedialog.askopenfilename(filetypes=[("Audio Files", "*.mp3;*.wav")])
         if file_path:
             self.audio_model = Model(file_path)
+            resonance = self.audio_model.get_resonance()
+            print(f"Resonance is {resonance}")
             self.file_label.config(text=f"File: {file_path}")
 
     def display_waveform(self):
@@ -56,6 +58,7 @@ class AudioAnalyzerGUI:
             else:
                 self.audio_model.plot_freqs(self.ax, "High")
                 self.current_freq = "Low"
+                #self.audio_model.plot_freqs_combined(self.ax)
             self.canvas.draw_idle()
         else:
             print("No file loaded. Please load an audio file.")
