@@ -25,6 +25,8 @@ class Model:
 
         self.fig, self.ax = self.create_empty_plot()  # Initialize figure and axes
 
+        self.highest_resonance_frequency = None
+
     @staticmethod
     def create_empty_plot():
         fig, ax = plt.subplots()
@@ -172,3 +174,11 @@ class Model:
             print("Multiple channels found. Converting to single channel.")
             self.data = np.mean(self.data, axis=1)
 
+    def compute_highest_resonance(self):
+        try:
+            max_freq_index = np.argmax(self.spectrum)
+            self.highest_resonance_frequency = self.freqs[max_freq_index]
+            print(f"Highest Resonance Frequency: {self.highest_resonance_frequency:.2f} Hz")
+        except Exception as e:
+            print(f"Error during highest resonance frequency computation: {e}")
+            self.highest_resonance_frequency = None
