@@ -6,7 +6,7 @@ from os import path
 
 class Model:
     def __init__(self, file):
-        if file.endswith('.mp3'):  #Converts mp3 file to wav, requires ffmpeg
+        if file.endswith('.mp3'):
             sound = AudioSegment.from_mp3(file)
             dst = file.split('.')[0]
             dst = dst + '.wav'
@@ -17,11 +17,21 @@ class Model:
         self.sample_rate, self.data = wavfile.read(file)
 
         self.check_channels()
-        self.data = self.data.flatten()  # Flatten the 2D array to 1D
-        self.spectrum, self.freqs, self.bins, self.img = plt.specgram(self.data, Fs=self.sample_rate, NFFT=1024, cmap=plt.get_cmap("autumn_r"))
+        self.data = self.data.flatten()
+        self.spectrum, self.freqs, self.bins, self.img = plt.specgram(self.data, Fs=self.sample_rate, NFFT=1024,
+                                                                      cmap=plt.get_cmap("autumn_r"))
         self.times = np.linspace(0, self.get_duration(), num=self.data.shape[0])
         self.data_in_db = self.get_data_by_frequency()
-        
+
+        self.fig, self.ax = self.create_empty_plot()  # Initialize figure and axes
+
+    @staticmethod
+    def create_empty_plot():
+        fig, ax = plt.subplots()
+        ax.set_title("Empty Plot")
+        ax.set_xlabel("X-axis Label")
+        ax.set_ylabel("Y-axis Label")
+        return fig, ax
     @property
     def sample_rate(self):
         return self.__sample_rate
@@ -92,6 +102,7 @@ class Model:
                 break
         return x
 
+
     def frequency_check(self, target):
         target_frequency = self.find_target_frequency(target)
         idx = np.where(self.freqs == target_frequency)[0][0]
@@ -109,43 +120,28 @@ class Model:
     def get_duration(self):
         return self.data.shape[0]/self.sample_rate
 
-    def plot_waveform(self):
-        plt.clf() #Remove/Overwrite Spectrogram from init
-        plt.plot(self.times, self.data)
-        plt.title("Waveform")
-        plt.xlabel("Time (s)")
-        plt.ylabel("Amplitude")
-        plt.show()
+    def plot_waveform(self, ax):
+        ax.clear()
+        ax.plot(self.times, self.data)
+        ax.set_title("Waveform")
+        ax.set_xlabel("Time (s)")
+        ax.set_ylabel("Amplitude")
 
-    def plot_freqs(self):
-        plt.figure(2)
+    def plot_freqs(self, ax, freq_type="Low"):
+        if freq_type not in self.data_in_db:
+            print(f"Invalid frequency type: {freq_type}")
+            return
 
-        # Interpolate the data_in_db["Low"] to match the length of self.times
-        interpolated_power = np.interp(self.times, np.linspace(0, self.get_duration(), num=len(self.data_in_db["Low"])),
-                                       self.data_in_db["Low"])
-        plt.plot(self.times, interpolated_power)
-        plt.title("Reverb Low Frequency")
-        plt.xlabel("Time (s)")
-        plt.ylabel("Power (dB)")
-        plt.show()
+        ax.clear()
 
-        plt.figure(3)
-        interpolated_power = np.interp(self.times, np.linspace(0, self.get_duration(), num=len(self.data_in_db["Mid"])),
-                                       self.data_in_db["Mid"])
-        plt.plot(self.times, interpolated_power)
-        plt.title("Reverb Mid Frequency")
-        plt.xlabel("Time (s)")
-        plt.ylabel("Power (dB)")
-        plt.show()
+        interpolated_power = np.interp(self.times,
+                                       np.linspace(0, self.get_duration(), num=len(self.data_in_db[freq_type])),
+                                       self.data_in_db[freq_type])
 
-        plt.figure(4)
-        interpolated_power = np.interp(self.times, np.linspace(0, self.get_duration(), num=len(self.data_in_db["High"])),
-                                       self.data_in_db["High"])
-        plt.plot(self.times, interpolated_power)
-        plt.title("Reverb High Frequency")
-        plt.xlabel("Time (s)")
-        plt.ylabel("Power (dB)")
-        plt.show()
+        ax.plot(self.times, interpolated_power)
+        ax.set_title(f"Reverb {freq_type} Frequency")
+        ax.set_xlabel("Time (s)")
+        ax.set_ylabel("Power (dB)")
 
     #Below checks for metadata, and if it finds any then creates a new wav file without the metadata and returns it, otherwise returns the file unedited
     def check_metadata(self, file):
