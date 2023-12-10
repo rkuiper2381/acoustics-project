@@ -5,16 +5,27 @@ from pydub import AudioSegment
 from os import path
 
 class Model:
-    def __init__(self, file):
-        if file.endswith('.mp3'):
-            sound = AudioSegment.from_mp3(file)
-            dst = file.split('.')[0]
+    def __init__(self):
+        self.file_path = None
+        self.sample_rate = None
+        self.data = None
+        self.spectrum = None
+        self.freqs = None
+        self.times = None
+        self.data_in_db = None
+        self.highest_resonance_frequency = None
+
+    def load_file(self, file_path):
+        if file_path.endswith('.mp3'):
+            sound = AudioSegment.from_mp3(file_path)
+            dst = file_path.split('.')[0]
             dst = dst + '.wav'
             sound.export(dst, format='wav')
-            file = dst
+            file_path = dst
             print('mp3 file converted to wav file')
-        file = self.check_metadata(file)
-        self.sample_rate, self.data = wavfile.read(file)
+
+        self.file_path = self.check_metadata(file_path)
+        self.sample_rate, self.data = wavfile.read(self.file_path)
 
         self.check_channels()
         self.data = self.data.flatten()
@@ -26,77 +37,39 @@ class Model:
         print(self.get_rt60())
         self.fig, self.ax = self.create_empty_plot()  # Initialize figure and axes
 
-    @staticmethod
-    def create_empty_plot():
+    @classmethod
+    def create_empty_plot(cls):
         fig, ax = plt.subplots()
         ax.set_title("Empty Plot")
         ax.set_xlabel("X-axis Label")
         ax.set_ylabel("Y-axis Label")
         return fig, ax
-    
-    @property
-    def sample_rate(self):
-        return self.__sample_rate
 
-    @sample_rate.setter
-    def sample_rate(self, value):
-        self.__sample_rate = value
+    def check_metadata(self, file):
+        sound = AudioSegment.from_file(file)
 
-    @property
-    def data(self):
-        return self.__data
+        if b'INFO' in sound.raw_data:
+            print("INFO metadata found:")
+            print(sound.raw_data[b'INFO'])
+            new_sound = AudioSegment(
+                sound.raw_data[:sound.raw_data.find(b'INFO')],
+                frame_rate=sound.frame_rate,
+                sample_width=sound.sample_width,
+                channels=sound.channels
+            )
+            new_file = file.split('.')[0]
+            new_file = 'nometa' + new_file + '.wav'
+            new_sound.export(new_file, format='wav')
+            print(f"Metadata removed. New file saved as {new_file}")
+            return new_file
+        else:
+            print("No INFO metadata found.")
+            return file
 
-    @data.setter
-    def data(self, value):
-        self.__data = value
-
-    @property
-    def spectrum(self):
-        return self.__spectrum
-
-    @spectrum.setter
-    def spectrum(self, value):
-        self.__spectrum = value
-
-    @property
-    def freqs(self):
-        return self.__freqs
-
-    @freqs.setter
-    def freqs(self, value):
-        self.__freqs = value
-
-    @property
-    def t(self):
-        return self.__t
-
-    @t.setter
-    def t(self, value):
-        self.__t = value
-
-    @property
-    def img(self):
-        return self.__img
-
-    @img.setter
-    def img(self, value):
-        self.__img = value
-
-    @property
-    def times(self):
-        return self.__times
-
-    @times.setter
-    def times(self, value):
-        self.__times = value
-    
-    @property
-    def data_in_db(self):
-        return self.__data_in_db
-
-    @data_in_db.setter
-    def data_in_db(self, value):
-        self.__data_in_db = value
+    def check_channels(self):
+        if len(self.data.shape) > 1 and self.data.shape[1] > 1:
+            print("Multiple channels found. Converting to single channel.")
+            self.data = np.mean(self.data, axis=1)
 
     @property
     def rt60(self):
@@ -111,7 +84,6 @@ class Model:
             if x > target:
                 break
         return x
-
 
     def frequency_check(self, target):
         target_frequency = self.find_target_frequency(target)
@@ -130,8 +102,8 @@ class Model:
               }
           return data_db
 
-    @staticmethod
-    def first_below(array, threshold): #Finds First in array Below threshold
+    @classmethod
+    def first_below(cls, array, threshold): #Finds First in array Below threshold
         for x in array:
             if x < threshold:
                 break
@@ -172,10 +144,10 @@ class Model:
         return self.rt60[freq_type][0]
         
     def get_duration(self):
-        return self.data.shape[0]/self.sample_rate
+        return self.data.shape[0] / self.sample_rate
 
-    def get_resonance(self): #Reurn Frequency of Highest Amplitude (Hz)
-        idx = np.argmax(self.spectrum)//len(self.spectrum[0])
+    def get_resonance(self):
+        idx = np.argmax(self.spectrum) // len(self.spectrum[0])
         return self.freqs[idx]
 
     def plot_waveform(self, ax):
@@ -220,16 +192,16 @@ class Model:
         ax.clear()
 
         interpolated_power_low = np.interp(self.times,
-                                       np.linspace(0, self.get_duration(), num=len(self.data_in_db["Low"])),
-                                       self.data_in_db["Low"])
+                                           np.linspace(0, self.get_duration(), num=len(self.data_in_db["Low"])),
+                                           self.data_in_db["Low"])
 
         interpolated_power_mid = np.interp(self.times,
-                                       np.linspace(0, self.get_duration(), num=len(self.data_in_db["Mid"])),
-                                       self.data_in_db["Mid"])
+                                           np.linspace(0, self.get_duration(), num=len(self.data_in_db["Mid"])),
+                                           self.data_in_db["Mid"])
 
         interpolated_power_high = np.interp(self.times,
-                                       np.linspace(0, self.get_duration(), num=len(self.data_in_db["High"])),
-                                       self.data_in_db["High"])
+                                            np.linspace(0, self.get_duration(), num=len(self.data_in_db["High"])),
+                                            self.data_in_db["High"])
 
         ax.plot(self.times, interpolated_power_low)
         self.plot_rt60(ax, "Low")
@@ -243,33 +215,3 @@ class Model:
         ax.set_title(f"Reverb Frequency (Combined)")
         ax.set_xlabel("Time (s)")
         ax.set_ylabel("Power (dB)")
-
-    #Below checks for metadata, and if it finds any then creates a new wav file without the metadata and returns it, otherwise returns the file unedited
-    def check_metadata(self, file):
-        sound = AudioSegment.from_file(file)
-
-        # Check if INFO metadata is present
-        if b'INFO' in sound.raw_data:
-            print("INFO metadata found:")
-            print(sound.raw_data[b'INFO'])
-            new_sound = AudioSegment(
-                sound.raw_data[:sound.raw_data.find(b'INFO')],
-                frame_rate=sound.frame_rate,
-                sample_width=sound.sample_width,
-                channels=sound.channels
-            )
-            new_file = file.split('.')[0]
-            new_file = 'nometa' + new_file + '.wav'
-            new_sound.export(new_file, format='wav')
-            print(f"Metadata removed. New file saved as {new_file}")
-            return new_file
-        else:
-            print("No INFO metadata found.")
-            return file
-
-    def check_channels(self):
-        # Check if multiple channels exist, and if so convert to one channel whose data is the average of the other channels combined
-        if len(self.data.shape) > 1 and self.data.shape[1] > 1:
-            print("Multiple channels found. Converting to single channel.")
-            self.data = np.mean(self.data, axis=1)
-
