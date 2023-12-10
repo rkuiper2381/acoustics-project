@@ -34,6 +34,7 @@ class Model:
         ax.set_xlabel("X-axis Label")
         ax.set_ylabel("Y-axis Label")
         return fig, ax
+    
     @property
     def sample_rate(self):
         return self.__sample_rate
@@ -114,13 +115,17 @@ class Model:
     def get_data_by_frequency(self): #Returns Dictionary of dB Arrays for Low, Mid, and High Frequencies 
           x = { "Low" : self.frequency_check(100),
                "Mid" : self.frequency_check(1000),
-               "High" : self.frequency_check(3000)
+               "High" : self.frequency_check(5000)
               }
           return x
 
     
     def get_duration(self):
         return self.data.shape[0]/self.sample_rate
+
+    def get_resonance(self): #Reurn Frequency of Highest Amplitude (Hz)
+        idx = np.argmax(self.spectrum)//len(self.spectrum[0])
+        return self.freqs[idx]
 
     def plot_waveform(self, ax):
         ax.clear()
@@ -142,6 +147,28 @@ class Model:
 
         ax.plot(self.times, interpolated_power)
         ax.set_title(f"Reverb {freq_type} Frequency")
+        ax.set_xlabel("Time (s)")
+        ax.set_ylabel("Power (dB)")
+
+    def plot_freqs_combined(self, ax):
+        ax.clear()
+
+        interpolated_power_low = np.interp(self.times,
+                                       np.linspace(0, self.get_duration(), num=len(self.data_in_db["Low"])),
+                                       self.data_in_db["Low"])
+
+        interpolated_power_mid = np.interp(self.times,
+                                       np.linspace(0, self.get_duration(), num=len(self.data_in_db["Mid"])),
+                                       self.data_in_db["Mid"])
+
+        interpolated_power_high = np.interp(self.times,
+                                       np.linspace(0, self.get_duration(), num=len(self.data_in_db["High"])),
+                                       self.data_in_db["High"])
+
+        ax.plot(self.times, interpolated_power_low)
+        ax.plot(self.times, interpolated_power_mid)
+        ax.plot(self.times, interpolated_power_high)
+        ax.set_title(f"Reverb Frequency (Combined)")
         ax.set_xlabel("Time (s)")
         ax.set_ylabel("Power (dB)")
 
