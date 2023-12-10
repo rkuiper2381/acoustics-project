@@ -136,12 +136,12 @@ class Model:
     def get_rt60(self, freq_type="Avg"):
         if freq_type not in self.data_in_db:
             if freq_type == "Avg":
-                return (self.rt60["Low"][0] + self.rt60["Mid"][0] + self.rt60["High"][0]) / 3
+                return float((self.rt60["Low"][0] + self.rt60["Mid"][0] + self.rt60["High"][0]) / 3)
             else:
                 print(f"Invalid frequency type: {freq_type}")
-                return
-            
-        return self.rt60[freq_type][0]
+                return None  # or any other appropriate value
+
+        return float(self.rt60[freq_type][0])
         
     def get_duration(self):
         return self.data.shape[0] / self.sample_rate
