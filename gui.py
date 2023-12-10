@@ -60,16 +60,8 @@ class AudioAnalyzerGUI:
             self.duration_label.config(text=f"Duration: {duration_seconds:.2f} seconds")
 
             # Attempt to compute and display the highest resonance frequency
-            try:
-                self.audio_model.compute_highest_resonance()
-                highest_resonance = self.audio_model.highest_resonance_frequency
-                if highest_resonance is not None:
-                    self.resonance_label.config(text=f"Highest Resonance Frequency: {highest_resonance:.2f} Hz")
-                else:
-                    self.resonance_label.config(text="Highest Resonance Frequency: N/A")
-            except Exception as e:
-                print(f"Error during highest resonance frequency computation: {e}")
-                self.resonance_label.config(text="Highest Resonance Frequency: N/A")
+            self.resonance_label.config(text=f"Highest Resonance Frequency: {resonance:.2f} Hz")
+
 
     def display_waveform(self):
         if hasattr(self, 'audio_model'):
