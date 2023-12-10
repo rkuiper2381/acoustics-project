@@ -191,13 +191,13 @@ class Model:
     def plot_freqs_combined(self, ax):
         ax.clear()
 
-        ax.plot(self.times, self.data_in_db[freq_type])
+        ax.plot(self.times, self.data_in_db["Low"])
         self.plot_rt60(ax, "Low")
             
-        ax.plot(self.times, self.data_in_db[freq_type])
+        ax.plot(self.times, self.data_in_db["Mid"])
         self.plot_rt60(ax, "Mid")
         
-        ax.plot(self.times, self.data_in_db[freq_type])
+        ax.plot(self.times, self.data_in_db["High"])
         self.plot_rt60(ax, "High")
         
         ax.set_title(f"Reverb Frequency (Combined)")
