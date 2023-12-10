@@ -26,7 +26,7 @@ class AudioAnalyzerGUI:
         self.combine_freqs_button = tk.Button(root, text="Combine Frequencies", command=self.combine_frequencies)
         self.combine_freqs_button.pack()
 
-        self.rt60_button = tk.Button(root, text="Display RT60 Differences", command=self.display_rt60_differences)
+        self.rt60_button = tk.Button(root, text="Display RT60 Info", command=self.display_rt60_info)
         self.rt60_button.pack()
 
         self.duration_label = tk.Label(root, text="Duration: ")
@@ -34,6 +34,21 @@ class AudioAnalyzerGUI:
 
         self.resonance_label = tk.Label(root, text="Highest Resonance Frequency: ")
         self.resonance_label.pack()
+
+        self.rt60_low_label = tk.Label(root, text="RT60 Low: N/A")
+        self.rt60_low_label.pack()
+
+        self.rt60_mid_label = tk.Label(root, text="RT60 Mid: N/A")
+        self.rt60_mid_label.pack()
+
+        self.rt60_high_label = tk.Label(root, text="RT60 High: N/A")
+        self.rt60_high_label.pack()
+
+        self.rt60_avg_label = tk.Label(root, text="RT60 Average: N/A")
+        self.rt60_avg_label.pack()
+
+        self.rt60_avg_minus_5_label = tk.Label(root, text="RT60 Average - 5: N/A")
+        self.rt60_avg_minus_5_label.pack()
 
         self.rt60_label = tk.Label(root, text="RT60 Differences: N/A")
         self.rt60_label.pack()
@@ -95,18 +110,33 @@ class AudioAnalyzerGUI:
         else:
             print("No file loaded. Please load an audio file.")
 
-    def display_rt60_differences(self):
+    def display_rt60_info(self):
         if self.model:
             # Calculate RT60 for each frequency band
-            rt60_low = self.calculate_rt60("Low")
-            rt60_mid = self.calculate_rt60("Mid")
-            rt60_high = self.calculate_rt60("High")
+            rt60_data = self.model.calc_rt60()
 
-            # Display the RT60 differences in the existing GUI
-            rt60_text = f"RT60 Differences (s): Low: {rt60_low:.2f}, Mid: {rt60_mid:.2f}, High: {rt60_high:.2f}"
-            self.rt60_label.config(text=rt60_text)
+            # Extract values for each frequency band
+            rt60_low = rt60_data["Low"][0][0]
+            rt60_mid = rt60_data["Mid"][0][0]
+            rt60_high = rt60_data["High"][0][0]
+
+            # Calculate averages
+            rt60_avg = self.model.get_rt60()
+            rt60_avg_minus_5 = rt60_avg - 5
+
+
+            rt60_low_text = f"RT60 Low: {rt60_low:.2f} seconds"
+            rt60_mid_text = f"RT60 Mid: {rt60_mid:.2f} seconds"
+            rt60_high_text = f"RT60 High: {rt60_high:.2f} seconds"
+            rt60_avg_text = f"RT60 Average: {rt60_avg:.2f} seconds"
+            rt60_avg_minus_5_text = f"RT60 Average - 5: {rt60_avg_minus_5:.2f} seconds"
+            rt60_diff_text = f"RT60 Differences: Low-Mid: {rt60_mid - rt60_low:.2f}, Mid-High: {rt60_high - rt60_mid:.2f}, High-Low: {rt60_low - rt60_high:.2f}"
+            self.rt60_label.config(text=rt60_diff_text)
+            self.rt60_low_label.config(text=rt60_low_text)
+            self.rt60_mid_label.config(text=rt60_mid_text)
+            self.rt60_high_label.config(text=rt60_high_text)
+            self.rt60_avg_label.config(text=rt60_avg_text)
+            self.rt60_avg_minus_5_label.config(text=rt60_avg_minus_5_text)
 
         else:
             print("No file loaded. Please load an audio file.")
-
-
