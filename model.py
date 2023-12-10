@@ -159,9 +159,12 @@ class Model:
 
     def plot_resonance(self, ax):
         spectrum_db = 10 * np.log10(np.max(self.spectrum, axis=1))
+        peak = spectrum_db[np.argmax(spectrum_db)]
+        
         ax.clear()
         ax.plot(self.freqs, spectrum_db)
-        ax.set_title("Waveform")
+        ax.plot(self.get_resonance(), peak, "ro")
+        ax.set_title("Resonance")
         ax.set_xlabel("Frequency (Hz)")
         ax.set_ylabel("Amplitude")
 

@@ -64,7 +64,6 @@ class AudioAnalyzerGUI:
     def display_waveform(self):
         if hasattr(self, 'model') and self.model:
             self.ax.clear()
-            #self.model.plot_resonance(self.ax)
             self.model.plot_waveform(self.ax)
             self.canvas.draw_idle()
         else:
