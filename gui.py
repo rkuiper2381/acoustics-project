@@ -24,11 +24,17 @@ class AudioAnalyzerGUI:
         self.combine_freqs_button = tk.Button(root, text="Combine Frequencies", command=self.combine_frequencies)
         self.combine_freqs_button.pack()
 
+        self.rt60_button = tk.Button(root, text="Display RT60 Differences", command=self.display_rt60_differences)
+        self.rt60_button.pack()
+
         self.duration_label = tk.Label(root, text="Duration: ")
         self.duration_label.pack()
 
         self.resonance_label = tk.Label(root, text="Highest Resonance Frequency: ")
         self.resonance_label.pack()
+
+        self.rt60_label = tk.Label(root, text="RT60 Differences: N/A")
+        self.rt60_label.pack()
 
         # Initialize audio_model attribute
         self.audio_model = None
@@ -54,16 +60,8 @@ class AudioAnalyzerGUI:
             self.duration_label.config(text=f"Duration: {duration_seconds:.2f} seconds")
 
             # Attempt to compute and display the highest resonance frequency
-            try:
-                self.audio_model.compute_highest_resonance()
-                highest_resonance = self.audio_model.highest_resonance_frequency
-                if highest_resonance is not None:
-                    self.resonance_label.config(text=f"Highest Resonance Frequency: {highest_resonance:.2f} Hz")
-                else:
-                    self.resonance_label.config(text="Highest Resonance Frequency: N/A")
-            except Exception as e:
-                print(f"Error during highest resonance frequency computation: {e}")
-                self.resonance_label.config(text="Highest Resonance Frequency: N/A")
+            self.resonance_label.config(text=f"Highest Resonance Frequency: {resonance:.2f} Hz")
+
 
     def display_waveform(self):
         if hasattr(self, 'audio_model'):
@@ -122,6 +120,48 @@ class AudioAnalyzerGUI:
             self.canvas.draw_idle()
         else:
             print("No file loaded. Please load an audio file.")
+
+    def display_rt60_differences(self):
+        if self.audio_model:
+            # Calculate RT60 for each frequency band
+            rt60_low = self.calculate_rt60("Low")
+            rt60_mid = self.calculate_rt60("Mid")
+            rt60_high = self.calculate_rt60("High")
+
+            # Display the RT60 differences in the existing GUI
+            rt60_text = f"RT60 Differences (s): Low: {rt60_low:.2f}, Mid: {rt60_mid:.2f}, High: {rt60_high:.2f}"
+            self.rt60_label.config(text=rt60_text)
+
+        else:
+            print("No file loaded. Please load an audio file.")
+
+    def calculate_rt60(self, freq_type):
+        if freq_type in self.audio_model.data_in_db:
+            # Find the index of the maximum value in the dB array
+            max_index = np.argmax(self.audio_model.data_in_db[freq_type])
+
+            # Calculate values according to the guidelines
+            max_value = self.audio_model.data_in_db[freq_type][max_index]
+            threshold_minus_5dB = max_value - 5
+            threshold_minus_25dB = max_value - 25
+
+            # Find the time indices corresponding to the calculated values
+            index_minus_5dB = np.argmax(self.audio_model.data_in_db[freq_type] >= threshold_minus_5dB)
+            index_minus_25dB = np.argmax(self.audio_model.data_in_db[freq_type] >= threshold_minus_25dB)
+
+            # Convert the indices to time in seconds
+            time_minus_5dB = self.audio_model.times[index_minus_5dB]
+            time_minus_25dB = self.audio_model.times[index_minus_25dB]
+
+            # Calculate RT60 as the time it takes amplitude to drop from max (less 5dB) to max (less 25dB)
+            rt60 = (time_minus_25dB - time_minus_5dB) * 3
+
+            print(f"RT60 for {freq_type} frequencies: {rt60:.2f} seconds")
+            return rt60
+
+        else:
+            print(f"Invalid frequency type: {freq_type}")
+            return 0
 if __name__ == "__main__":
     root = tk.Tk()
     app = AudioAnalyzerGUI(root)
