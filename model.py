@@ -29,10 +29,13 @@ class Model:
 
         self.check_channels()
         self.data = self.data.flatten()
-        self.spectrum, self.freqs, self.bins, self.img = plt.specgram(self.data, Fs=self.sample_rate, NFFT=1024,
+        self.spectrum, self.freqs, self.t, self.img = plt.specgram(self.data, Fs=self.sample_rate, NFFT=1024,
                                                                       cmap=plt.get_cmap("autumn_r"))
         self.times = np.linspace(0, self.get_duration(), num=self.data.shape[0])
         self.data_in_db = self.get_data_by_frequency()
+        self.rt60 = self.calc_rt60()
+        print(self.get_rt60())
+        self.fig, self.ax = self.create_empty_plot()  # Initialize figure and axes
 
     @classmethod
     def create_empty_plot(cls):
@@ -68,6 +71,14 @@ class Model:
             print("Multiple channels found. Converting to single channel.")
             self.data = np.mean(self.data, axis=1)
 
+    @property
+    def rt60(self):
+        return self.__rt60
+
+    @rt60.setter
+    def rt60(self, value):
+        self.__rt60 = value
+
     def find_target_frequency(self, target):
         for x in self.freqs:
             if x > target:
@@ -78,15 +89,60 @@ class Model:
         target_frequency = self.find_target_frequency(target)
         idx = np.where(self.freqs == target_frequency)[0][0]
         data_db = 10 * np.log10(self.spectrum[idx])
-        return data_db
 
-    def get_data_by_frequency(self):
-        x = {"Low": self.frequency_check(100),
-             "Mid": self.frequency_check(1000),
-             "High": self.frequency_check(5000)
-             }
+        db_interpolated = np.interp(self.times,
+                               np.linspace(0, self.get_duration(), num=len(data_db)),
+                               data_db)
+        return db_interpolated
+
+    def get_data_by_frequency(self): #Returns Dictionary of dB Arrays for Low, Mid, and High Frequencies 
+          data_db = { "Low" : self.frequency_check(100),
+               "Mid" : self.frequency_check(1000),
+               "High" : self.frequency_check(5000)
+              }
+          return data_db
+
+    @classmethod
+    def first_below(cls, array, threshold): #Finds First in array Below threshold
+        for x in array:
+            if x < threshold:
+                break
         return x
 
+    def calc_rt60_freq(self, freq_type="Low"):
+        max_val_idx = np.argmax(self.data_in_db[freq_type])
+        max_val = self.data_in_db[freq_type][max_val_idx]
+        sliced_db = self.data_in_db[freq_type][max_val_idx:]
+
+        
+        max_less_5 = self.first_below(sliced_db, max_val - 5)
+        max_less_5_idx = np.where(self.data_in_db[freq_type] == max_less_5)
+
+        max_less_25 = self.first_below(sliced_db, max_val - 25)
+        max_less_25_idx = np.where(self.data_in_db[freq_type] == max_less_25)
+
+        rt20 = self.times[max_less_25_idx] - self.times[max_less_5_idx]
+        rt60 = 3 * rt20
+
+        return [rt60, max_val_idx, max_less_5_idx, max_less_25_idx]
+
+    def calc_rt60(self):
+          rt60 = { "Low" : self.calc_rt60_freq("Low"),
+               "Mid" : self.calc_rt60_freq("Mid"),
+               "High" : self.calc_rt60_freq("High")
+              }
+          return rt60
+
+    def get_rt60(self, freq_type="Avg"):
+        if freq_type not in self.data_in_db:
+            if freq_type == "Avg":
+                return (self.rt60["Low"][0] + self.rt60["Mid"][0] + self.rt60["High"][0]) / 3
+            else:
+                print(f"Invalid frequency type: {freq_type}")
+                return
+            
+        return self.rt60[freq_type][0]
+        
     def get_duration(self):
         return self.data.shape[0] / self.sample_rate
 
@@ -101,6 +157,23 @@ class Model:
         ax.set_xlabel("Time (s)")
         ax.set_ylabel("Amplitude")
 
+    #def plot_resonance(self, ax):
+    #    spectrum_db = 10 * np.log10(self.spectrum)
+    #    ax.clear()
+    #    ax.plot(self.freqs, spectrum_db)
+    #    ax.set_title("Waveform")
+    #    ax.set_xlabel("Frequency (Hz)")
+    #    ax.set_ylabel("Amplitude")
+
+    def plot_rt60(self, ax, freq_type="Low"):
+        if freq_type not in self.data_in_db:
+            print(f"Invalid frequency type: {freq_type}")
+            return
+
+        ax.plot(self.times[self.rt60[freq_type][1]], self.data_in_db[freq_type][self.rt60[freq_type][1]], 'go')
+        ax.plot(self.times[self.rt60[freq_type][2]], self.data_in_db[freq_type][self.rt60[freq_type][2]], 'yo')
+        ax.plot(self.times[self.rt60[freq_type][3]], self.data_in_db[freq_type][self.rt60[freq_type][3]], 'ro')
+
     def plot_freqs(self, ax, freq_type="Low"):
         if freq_type not in self.data_in_db:
             print(f"Invalid frequency type: {freq_type}")
@@ -108,11 +181,9 @@ class Model:
 
         ax.clear()
 
-        interpolated_power = np.interp(self.times,
-                                       np.linspace(0, self.get_duration(), num=len(self.data_in_db[freq_type])),
-                                       self.data_in_db[freq_type])
-
-        ax.plot(self.times, interpolated_power)
+        ax.plot(self.times, self.data_in_db[freq_type])
+        self.plot_rt60(ax, freq_type)
+        
         ax.set_title(f"Reverb {freq_type} Frequency")
         ax.set_xlabel("Time (s)")
         ax.set_ylabel("Power (dB)")
@@ -133,8 +204,14 @@ class Model:
                                             self.data_in_db["High"])
 
         ax.plot(self.times, interpolated_power_low)
+        self.plot_rt60(ax, "Low")
+            
         ax.plot(self.times, interpolated_power_mid)
+        self.plot_rt60(ax, "Mid")
+        
         ax.plot(self.times, interpolated_power_high)
+        self.plot_rt60(ax, "High")
+        
         ax.set_title(f"Reverb Frequency (Combined)")
         ax.set_xlabel("Time (s)")
         ax.set_ylabel("Power (dB)")
