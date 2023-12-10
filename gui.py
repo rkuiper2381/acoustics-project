@@ -5,9 +5,11 @@ from model import Model
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 class AudioAnalyzerGUI:
-    def __init__(self, root):
+    def __init__(self, root, model):
         self.root = root
         self.root.title("Audio Analyzer")
+
+        self.model = model
 
         self.file_label = tk.Label(root, text="No File Loaded")
         self.file_label.pack()
@@ -36,9 +38,6 @@ class AudioAnalyzerGUI:
         self.rt60_label = tk.Label(root, text="RT60 Differences: N/A")
         self.rt60_label.pack()
 
-        # Initialize audio_model attribute
-        self.audio_model = None
-
         # Matplotlib figure and canvas
         self.figure, self.ax = Model.create_empty_plot()
         self.canvas = FigureCanvasTkAgg(self.figure, master=root)
@@ -50,65 +49,63 @@ class AudioAnalyzerGUI:
     def load_file(self):
         file_path = filedialog.askopenfilename(filetypes=[("Audio Files", "*.mp3;*.wav")])
         if file_path:
-            self.audio_model = Model(file_path)
-            resonance = self.audio_model.get_resonance()
+            self.model.load_file(file_path)
+            resonance = self.model.get_resonance()
             print(f"Resonance is {resonance}")
             self.file_label.config(text=f"File: {file_path}")
 
             # Display the duration of the loaded audio file
-            duration_seconds = self.audio_model.get_duration()
+            duration_seconds = self.model.get_duration()
             self.duration_label.config(text=f"Duration: {duration_seconds:.2f} seconds")
 
             # Attempt to compute and display the highest resonance frequency
-            self.resonance_label.config(text=f"Highest Resonance Frequency: {resonance:.2f} Hz")
-
+            self.resonance_label.config(text=f"Highest Resonance Frequency: {resonance:.2f}")
 
     def display_waveform(self):
-        if hasattr(self, 'audio_model'):
+        if hasattr(self, 'model') and self.model:
             self.ax.clear()
-            self.audio_model.plot_waveform(self.ax)
+            self.model.plot_waveform(self.ax)
             self.canvas.draw_idle()
         else:
             print("No file loaded. Please load an audio file.")
 
     def cycle_display_freqs(self):
-        if self.audio_model:
+        if self.model:
             self.ax.clear()
             if self.current_freq == "Low":
-                self.audio_model.plot_freqs(self.ax, "Low")
+                self.model.plot_freqs(self.ax, "Low")
                 self.current_freq = "Mid"
             elif self.current_freq == "Mid":
-                self.audio_model.plot_freqs(self.ax, "Mid")
+                self.model.plot_freqs(self.ax, "Mid")
                 self.current_freq = "High"
             else:
-                self.audio_model.plot_freqs(self.ax, "High")
+                self.model.plot_freqs(self.ax, "High")
                 self.current_freq = "Low"
-                #self.audio_model.plot_freqs_combined(self.ax)
             self.canvas.draw_idle()
         else:
             print("No file loaded. Please load an audio file.")
 
     def combine_frequencies(self):
-        if self.audio_model:
+        if self.model:
             self.ax.clear()
 
             # Get the data for low, mid, and high frequencies
-            low_data = self.audio_model.get_data_by_frequency()["Low"]
-            mid_data = self.audio_model.get_data_by_frequency()["Mid"]
-            high_data = self.audio_model.get_data_by_frequency()["High"]
+            low_data = self.model.get_data_by_frequency()["Low"]
+            mid_data = self.model.get_data_by_frequency()["Mid"]
+            high_data = self.model.get_data_by_frequency()["High"]
 
             # Interpolate the frequency data to match the length of the times array
-            low_interp = np.interp(self.audio_model.times,
-                                   np.linspace(0, self.audio_model.get_duration(), len(low_data)), low_data)
-            mid_interp = np.interp(self.audio_model.times,
-                                   np.linspace(0, self.audio_model.get_duration(), len(mid_data)), mid_data)
-            high_interp = np.interp(self.audio_model.times,
-                                    np.linspace(0, self.audio_model.get_duration(), len(high_data)), high_data)
+            low_interp = np.interp(self.model.times,
+                                   np.linspace(0, self.model.get_duration(), len(low_data)), low_data)
+            mid_interp = np.interp(self.model.times,
+                                   np.linspace(0, self.model.get_duration(), len(mid_data)), mid_data)
+            high_interp = np.interp(self.model.times,
+                                    np.linspace(0, self.model.get_duration(), len(high_data)), high_data)
 
             # Plot low, mid, and high frequencies on the same plot with distinct labels
-            self.ax.plot(self.audio_model.times, low_interp, label="Low")
-            self.ax.plot(self.audio_model.times, mid_interp, label="Mid")
-            self.ax.plot(self.audio_model.times, high_interp, label="High")
+            self.ax.plot(self.model.times, low_interp, label="Low")
+            self.ax.plot(self.model.times, mid_interp, label="Mid")
+            self.ax.plot(self.model.times, high_interp, label="High")
 
             # Add legend with distinct labels
             self.ax.legend()
@@ -122,7 +119,7 @@ class AudioAnalyzerGUI:
             print("No file loaded. Please load an audio file.")
 
     def display_rt60_differences(self):
-        if self.audio_model:
+        if self.model:
             # Calculate RT60 for each frequency band
             rt60_low = self.calculate_rt60("Low")
             rt60_mid = self.calculate_rt60("Mid")
@@ -136,22 +133,22 @@ class AudioAnalyzerGUI:
             print("No file loaded. Please load an audio file.")
 
     def calculate_rt60(self, freq_type):
-        if freq_type in self.audio_model.data_in_db:
+        if freq_type in self.model.data_in_db:
             # Find the index of the maximum value in the dB array
-            max_index = np.argmax(self.audio_model.data_in_db[freq_type])
+            max_index = np.argmax(self.model.data_in_db[freq_type])
 
             # Calculate values according to the guidelines
-            max_value = self.audio_model.data_in_db[freq_type][max_index]
+            max_value = self.model.data_in_db[freq_type][max_index]
             threshold_minus_5dB = max_value - 5
             threshold_minus_25dB = max_value - 25
 
             # Find the time indices corresponding to the calculated values
-            index_minus_5dB = np.argmax(self.audio_model.data_in_db[freq_type] >= threshold_minus_5dB)
-            index_minus_25dB = np.argmax(self.audio_model.data_in_db[freq_type] >= threshold_minus_25dB)
+            index_minus_5dB = np.argmax(self.model.data_in_db[freq_type] >= threshold_minus_5dB)
+            index_minus_25dB = np.argmax(self.model.data_in_db[freq_type] >= threshold_minus_25dB)
 
             # Convert the indices to time in seconds
-            time_minus_5dB = self.audio_model.times[index_minus_5dB]
-            time_minus_25dB = self.audio_model.times[index_minus_25dB]
+            time_minus_5dB = self.model.times[index_minus_5dB]
+            time_minus_25dB = self.model.times[index_minus_25dB]
 
             # Calculate RT60 as the time it takes amplitude to drop from max (less 5dB) to max (less 25dB)
             rt60 = (time_minus_25dB - time_minus_5dB) * 3
@@ -162,7 +159,3 @@ class AudioAnalyzerGUI:
         else:
             print(f"Invalid frequency type: {freq_type}")
             return 0
-if __name__ == "__main__":
-    root = tk.Tk()
-    app = AudioAnalyzerGUI(root)
-    root.mainloop()
