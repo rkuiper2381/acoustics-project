@@ -157,13 +157,13 @@ class Model:
         ax.set_xlabel("Time (s)")
         ax.set_ylabel("Amplitude")
 
-    #def plot_resonance(self, ax):
-    #    spectrum_db = 10 * np.log10(self.spectrum)
-    #    ax.clear()
-    #    ax.plot(self.freqs, spectrum_db)
-    #    ax.set_title("Waveform")
-    #    ax.set_xlabel("Frequency (Hz)")
-    #    ax.set_ylabel("Amplitude")
+    def plot_resonance(self, ax):
+        spectrum_db = 10 * np.log10(np.max(self.spectrum, axis=1))
+        ax.clear()
+        ax.plot(self.freqs, spectrum_db)
+        ax.set_title("Waveform")
+        ax.set_xlabel("Frequency (Hz)")
+        ax.set_ylabel("Amplitude")
 
     def plot_rt60(self, ax, freq_type="Low"):
         if freq_type not in self.data_in_db:
@@ -191,25 +191,13 @@ class Model:
     def plot_freqs_combined(self, ax):
         ax.clear()
 
-        interpolated_power_low = np.interp(self.times,
-                                           np.linspace(0, self.get_duration(), num=len(self.data_in_db["Low"])),
-                                           self.data_in_db["Low"])
-
-        interpolated_power_mid = np.interp(self.times,
-                                           np.linspace(0, self.get_duration(), num=len(self.data_in_db["Mid"])),
-                                           self.data_in_db["Mid"])
-
-        interpolated_power_high = np.interp(self.times,
-                                            np.linspace(0, self.get_duration(), num=len(self.data_in_db["High"])),
-                                            self.data_in_db["High"])
-
-        ax.plot(self.times, interpolated_power_low)
+        ax.plot(self.times, self.data_in_db["Low"])
         self.plot_rt60(ax, "Low")
             
-        ax.plot(self.times, interpolated_power_mid)
+        ax.plot(self.times, self.data_in_db["Mid"])
         self.plot_rt60(ax, "Mid")
         
-        ax.plot(self.times, interpolated_power_high)
+        ax.plot(self.times, self.data_in_db["High"])
         self.plot_rt60(ax, "High")
         
         ax.set_title(f"Reverb Frequency (Combined)")
