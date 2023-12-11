@@ -5,6 +5,7 @@ from model import Model
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 class AudioAnalyzerGUI:
+    #init sets up the GUI and all of the buttons and empty canvas that will be later used
     def __init__(self, root, model):
         self.root = root
         self.root.title("Audio Analyzer")
@@ -62,9 +63,11 @@ class AudioAnalyzerGUI:
         # State variable to keep track of the current frequency to display
         self.current_freq = "Low"
 
+    #load file allows a user to select a mp3 or wav file and upload it
     def load_file(self):
         file_path = filedialog.askopenfilename(filetypes=[("Audio Files", "*.mp3;*.wav")])
         if file_path:
+            #Below takes info that can all be displayed at the same time (doesn't require a plot) and displays that data on the GUI
             self.model.load_file(file_path)
             resonance = self.model.get_resonance()
             print(f"Resonance is {resonance} Hz")
@@ -102,7 +105,7 @@ class AudioAnalyzerGUI:
             self.rt60_avg_label.config(text=rt60_avg_text)
             self.rt60_avg_minus_5_label.config(text=rt60_avg_minus_5_text)
 
-
+    #displays the resonance plot upon button press
     def display_resonance(self):
         if hasattr(self, 'model') and self.model:
             self.ax.clear()
@@ -110,6 +113,8 @@ class AudioAnalyzerGUI:
             self.canvas.draw_idle()
         else:
             print("No file loaded. Please load an audio file.")
+
+    # displays the waveform plot upon button press
     def display_waveform(self):
         if hasattr(self, 'model') and self.model:
             self.ax.clear()
@@ -118,6 +123,7 @@ class AudioAnalyzerGUI:
         else:
             print("No file loaded. Please load an audio file.")
 
+    #displays the RT60 reverb / freq plot cyclicly upon button press
     def cycle_display_freqs(self):
         if self.model:
             self.ax.clear()
@@ -134,6 +140,7 @@ class AudioAnalyzerGUI:
         else:
             print("No file loaded. Please load an audio file.")
 
+    #Displays the combined plot upon button press
     def combine_frequencies(self):
         if self.model:
             self.ax.clear()

@@ -1,7 +1,7 @@
 import tkinter as tk
 from model import Model
-from gui import AudioAnalyzerGUI
-
+from view import AudioAnalyzerGUI
+#Creates a model using the model file and uses it to create a GUI from which the user can interact
 class Controller:
     def __init__(self):
         self.model = Model()
