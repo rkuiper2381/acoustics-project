@@ -65,10 +65,11 @@ class AudioAnalyzerGUI:
 
     #load file allows a user to select a mp3 or wav file and upload it
     def load_file(self):
-        file_path = filedialog.askopenfilename(filetypes=[("Audio Files", "*.mp3;*.wav")])
+        file_path = filedialog.askopenfilename(filetypes=[("WAV Files", "*.wav"), ("MP3 Files", "*.mp3")])
         if file_path:
             #Below takes info that can all be displayed at the same time (doesn't require a plot) and displays that data on the GUI
             self.model.load_file(file_path)
+            self.display_waveform() #Display Waveform First
             resonance = self.model.get_resonance()
             print(f"Resonance is {resonance} Hz")
             self.file_label.config(text=f"File: {file_path}")
