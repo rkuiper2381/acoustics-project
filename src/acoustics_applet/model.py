@@ -213,18 +213,12 @@ class Model:
     def plot_freqs_combined(self, ax): #Plot Combined Amplitude by Time and RT60
         ax.clear() #Clear the Graph
 
-        #Plot Low Frequency Range
-        ax.plot(self.times, self.data_in_db["Low"])
-        self.plot_rt60(ax, "Low")
-
-        #Plot Middle Frequency Range
-        ax.plot(self.times, self.data_in_db["Mid"])
-        self.plot_rt60(ax, "Mid")
-
-        #Plot High Frequency Range
-        ax.plot(self.times, self.data_in_db["High"])
-        self.plot_rt60(ax, "High")
+        #Plot Frequency Ranges
+        ax.plot(self.times, self.data_in_db["Low"], label="Low Frequency")
+        ax.plot(self.times, self.data_in_db["Mid"], label="Mid Frequency")
+        ax.plot(self.times, self.data_in_db["High"], label="High Frequency")
         
         ax.set_title(f"Reverb Frequency (Combined)")
         ax.set_xlabel("Time (s)")
         ax.set_ylabel("Power (dB)")
+        ax.legend()
