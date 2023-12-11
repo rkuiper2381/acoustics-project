@@ -47,7 +47,7 @@ class Model:
 
     def check_metadata(self, file):
         sound = AudioSegment.from_file(file)
-
+        #Checks for any metadata, if found removes the metadata
         if b'INFO' in sound.raw_data:
             print("INFO metadata found:")
             print(sound.raw_data[b'INFO'])
@@ -67,6 +67,7 @@ class Model:
             return file
 
     def check_channels(self):
+        #if there is more than one channel, the file will be converted to one channel
         if len(self.data.shape) > 1 and self.data.shape[1] > 1:
             print("Multiple channels found. Converting to single channel.")
             self.data = np.mean(self.data, axis=1)
